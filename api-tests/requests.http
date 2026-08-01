@@ -1,0 +1,122 @@
+### 1. Create a room with recurring availability (Mon-Fri, 09:00-18:00)
+POST http://localhost:8080/api/rooms
+Content-Type: application/json
+
+{
+  "name": "Conference Room A",
+  "capacity": 10,
+  "location": "Floor 1, Building B",
+  "description": "Main conference room with projector",
+  "availabilities": [
+    {"day_of_week": 1, "start_time": "09:00", "end_time": "18:00"},
+    {"day_of_week": 2, "start_time": "09:00", "end_time": "18:00"},
+    {"day_of_week": 3, "start_time": "09:00", "end_time": "18:00"},
+    {"day_of_week": 4, "start_time": "09:00", "end_time": "18:00"},
+    {"day_of_week": 5, "start_time": "09:00", "end_time": "18:00"}
+  ]
+}
+
+### 2. Create a room with specific date availability
+POST http://localhost:8080/api/rooms
+Content-Type: application/json
+
+{
+  "name": "Small Meeting Room",
+  "capacity": 4,
+  "location": "Floor 2",
+  "availabilities": [
+    {"specific_date": "2026-07-28", "start_time": "10:00", "end_time": "16:00"}
+  ]
+}
+
+### 3. List all rooms (paginated)
+GET http://localhost:8080/api/rooms?page=1&page_size=10
+
+### 4. Get room details
+GET http://localhost:8080/api/rooms/1
+
+### 5. Get available slots for a room (unix timestamps)
+# from = 2026-07-27 00:00:00 UTC = 1785110400
+# to   = 2026-07-31 00:00:00 UTC = 1785456000
+GET http://localhost:8080/api/rooms/1/availability?from=1785110400&to=1785456000
+
+### 6. Book a room
+# 2026-07-28 10:00:00 UTC = 1785232800
+# 2026-07-28 11:00:00 UTC = 1785236400
+POST http://localhost:8080/api/bookings
+Content-Type: application/json
+
+{
+  "room_id": 1,
+  "start_time": "2026-07-28T10:00:00Z",
+  "end_time": "2026-07-28T11:00:00Z"
+}
+
+### 7. Try double-booking (should fail with 409)
+POST http://localhost:8080/api/bookings
+Content-Type: application/json
+
+{
+  "room_id": 1,
+  "start_time": "2026-07-28T10:30:00Z",
+  "end_time": "2026-07-28T11:30:00Z"
+}
+
+### 8. List bookings
+GET http://localhost:8080/api/bookings
+
+### 9. List bookings filtered by room and date range
+GET http://localhost:8080/api/bookings?room_id=1&from=1785110400&to=1785456000
+
+### 10. Cancel a booking
+DELETE http://localhost:8080/api/bookings/1
+
+### 11. Book outside availability (should fail with 400)
+POST http://localhost:8080/api/bookings
+Content-Type: application/json
+
+{
+  "room_id": 1,
+  "start_time": "2026-07-28T20:00:00Z",
+  "end_time": "2026-07-28T21:00:00Z"
+}
+
+### 12. Cancel non-existent booking (should fail with 404)
+DELETE http://localhost:8080/api/bookings/999
+
+### 13. Create room with no availability (should fail with 400)
+POST http://localhost:8080/api/rooms
+Content-Type: application/json
+
+{
+  "name": "Invalid Room",
+  "capacity": 5,
+  "availabilities": [
+    {"start_time": "09:00", "end_time": "17:00"}
+  ]
+}
+
+### 14. Create room with invalid availability time (should fail with 400)
+# "25:99" is not a valid HH:MM — rejected instead of silently normalized
+POST http://localhost:8080/api/rooms
+Content-Type: application/json
+
+{
+  "name": "Bad Time Room",
+  "capacity": 5,
+  "availabilities": [
+    {"day_of_week": 1, "start_time": "25:99", "end_time": "17:00"}
+  ]
+}
+
+### 15. Create room with duplicate name (should fail with 409)
+POST http://localhost:8080/api/rooms
+Content-Type: application/json
+
+{
+  "name": "Conference Room A",
+  "capacity": 5,
+  "availabilities": [
+    {"day_of_week": 1, "start_time": "09:00", "end_time": "17:00"}
+  ]
+}
